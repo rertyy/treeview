@@ -13,10 +13,10 @@ export default defineConfig([
   // Set language options and globals
   {
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-    languageOptions: {
+   languageOptions: {
       parserOptions: { ecmaVersion: "latest", sourceType: "module" },
       globals: globals.browser,
-    },
+    } ,
     rules: {
       // 'unicorn/better-regex': 'warn',
       "@typescript-eslint/no-explicit-any": "off",
@@ -29,7 +29,7 @@ export default defineConfig([
   },
 
   // Base ESLint + TypeScript + React
-  js.configs.recommended,
+     js.configs.recommended,
   tseslint.configs.recommended,
   pluginReact.configs.flat.recommended,
   pluginReact.configs.flat["jsx-runtime"],
@@ -40,5 +40,7 @@ export default defineConfig([
 
   // Import plugin for TS/JS module hygiene
   // importPlugin.flatConfigs.recommended,
-  importPlugin.flatConfigs.typescript,
+  importPlugin.flatConfigs.typescript 
+
+ 
 ]);
