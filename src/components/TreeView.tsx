@@ -1,6 +1,6 @@
 import { memo, useState } from "react";
 
-export type Selected = "Empty" | "Partial" | "Full";
+export type Selected = "Unselected" | "Partial" | "Selected";
 
 type RenderNodeProps = {
   node: Node;
@@ -12,12 +12,24 @@ export type Node = {
   children: string[];
   level: number;
   isOpen: boolean;
-  checkedState: Selected;
+  selectedState: Selected;
+};
+
+type NodeMap = {
+  [key: string]: Node;
 };
 
 type TreeState = {
-  nodes: Record<string, Node>;
+  nodes: NodeMap;
   rootId: string;
+};
+
+const nodeArrToMap = (nodes: Node[]) => {
+  const emptyTreeState: NodeMap = {};
+  return nodes.reduce((map, n) => {
+    map[n.key] = n;
+    return map;
+  }, emptyTreeState);
 };
 
 const setClosed = (n: Node): Node => ({ ...n, isOpen: false });
@@ -34,7 +46,7 @@ const createDefaultTreeView = (): TreeState => {
         children: [],
         level: 0,
         isOpen: true,
-        checkedState: "Empty",
+        selectedState: "Unselected",
       },
     },
   };
@@ -61,6 +73,7 @@ const TreeView = () => {
   const foldRecursively = (parent: Node) => {
     modifyRecursively(parent, setClosed);
   };
+
   const expandRecursively = (parent: Node) => {
     modifyRecursively(parent, setOpen);
   };
@@ -73,7 +86,7 @@ const TreeView = () => {
       children: [],
       level: parent.level + 1,
       isOpen: true,
-      checkedState: "Empty",
+      selectedState: "Unselected",
     };
     setTree((prev) => ({
       ...prev,
@@ -101,15 +114,124 @@ const TreeView = () => {
     }));
   };
 
+  const deleteNode = (node: Node) => {
+    if (node.key === tree.rootId) {
+      console.log("Cannot delete root");
+      return;
+    }
+    const rootNode = tree.nodes[tree.rootId];
+
+    const newNodes: Node[] = [];
+    const stack: Node[] = [rootNode];
+    while (stack.length) {
+      const curr = stack.pop()!;
+      const children: string[] = [];
+      for (const childKey of curr.children) {
+        if (childKey !== node.key) {
+          stack.push(tree.nodes[childKey]);
+          children.push(childKey);
+        }
+      }
+      newNodes.push({ ...curr, children: children });
+    }
+
+    const newNodeMap = nodeArrToMap(newNodes);
+
+    setTree((prev) => ({
+      ...prev,
+      nodes: newNodeMap,
+    }));
+  };
+
   const resetTree = () => {
     setTree(createDefaultTreeView());
+  };
+
+  // TODO
+  const setSelected = (node: Node) => {
+    // If selected, select all children
+    // Parents should update to Full or Partial accordingly
+    // TODO:
+    // If deselected, deselect all children
+    // Parents should update to Empty or Partial accordingly
+  };
+
+  const editNodeData = (node: Node, data: string) => {
+    setTree((prev) => ({
+      ...prev,
+      nodes: {
+        ...prev.nodes,
+        [node.key]: {
+          ...prev.nodes[node.key],
+          data: data,
+        },
+      },
+    }));
+  };
+  const deleteSelected = () => {
+    const rootNode = tree.nodes[tree.rootId];
+    if (rootNode.selectedState === "Selected") {
+      console.log("Cannot delete root");
+      return;
+    }
+
+    const newNodes: Node[] = [];
+    const stack: Node[] = [rootNode];
+    while (stack.length) {
+      const curr = stack.pop()!;
+      const childList: string[] = [];
+      for (const childKey of curr.children) {
+        const childNode = tree.nodes[childKey];
+        if (childNode.selectedState !== "Selected") {
+          stack.push(childNode);
+          childList.push(childNode.key);
+        }
+      }
+      newNodes.push({ ...curr, children: childList });
+    }
+
+    const newNodeMap = nodeArrToMap(newNodes);
+
+    setTree((prev) => ({
+      ...prev,
+      nodes: newNodeMap,
+    }));
+  };
+
+  const setRoot = (root: Node) => {
+    const validNodes: NodeMap = {};
+
+    const stack: string[] = [root.key];
+    while (stack.length) {
+      const nodeId = stack.pop()!;
+      const node = tree.nodes[nodeId];
+      validNodes[node.key] = node;
+
+      for (const key of node.children) {
+        stack.push(key);
+      }
+    }
+    const newTreeState: TreeState = {
+      rootId: root.key,
+      nodes: validNodes,
+    };
+    setTree(newTreeState);
+  };
+
+  // TODO: toJson
+  const toJson = () => {
+    // TODO:
   };
   const RenderNode = ({ node }: RenderNodeProps) => {
     return (
       <div style={{ paddingLeft: node.level }}>
         <button onClick={() => addChild(node)}>Add</button>
-        {/*<button onClick={() => deleteNode(node)}>Del</button>*/}
-        {/*<button onClick={() => editNode(node)}>Edit</button>*/}
+        <button onClick={() => setRoot(node)}>SetRoot</button>
+        <button onClick={() => deleteNode(node)}>Del</button>
+        <button onClick={() => editNodeData(node, crypto.randomUUID())}>
+          Edit
+        </button>
+        <button onClick={() => setSelected(node)}>{node.selectedState}</button>
         <button onClick={() => foldRecursively(node)}>Fold all</button>
         <button onClick={() => expandRecursively(node)}>Expand all</button>
         <button
@@ -142,6 +264,7 @@ const TreeView = () => {
       </button>
 
       <button onClick={resetTree}>Reset all nodes</button>
+      <button onClick={deleteSelected}>Delete Selected</button>
       <button onClick={() => foldRecursively(rootNode)}>
         Fold all recursively
       </button>
