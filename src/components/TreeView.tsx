@@ -13,6 +13,7 @@ export type Node = {
   level: number;
   isOpen: boolean;
   selectedState: Selected;
+  parent?: string;
 };
 
 type NodeMap = {
@@ -87,6 +88,7 @@ const TreeView = () => {
       level: parent.level + 1,
       isOpen: true,
       selectedState: "Unselected",
+      parent: parent.key,
     };
     setTree((prev) => ({
       ...prev,
@@ -119,41 +121,80 @@ const TreeView = () => {
       console.log("Cannot delete root");
       return;
     }
-    const rootNode = tree.nodes[tree.rootId];
 
-    const newNodes: Node[] = [];
-    const stack: Node[] = [rootNode];
-    while (stack.length) {
-      const curr = stack.pop()!;
-      const children: string[] = [];
-      for (const childKey of curr.children) {
-        if (childKey !== node.key) {
-          stack.push(tree.nodes[childKey]);
-          children.push(childKey);
-        }
+    const newNodes = { ...tree.nodes };
+    const parent = newNodes[node.parent!];
+    newNodes[parent.key] = {
+      ...parent,
+      children: parent.children.filter((k) => k !== node.key),
+    };
+
+    const stack = [node.key];
+    while (stack.length > 0) {
+      const key = stack.pop()!;
+      const children = newNodes[key]?.children ?? [];
+      for (const child of children) {
+        stack.push(child);
       }
-      newNodes.push({ ...curr, children: children });
+      delete newNodes[key];
     }
 
-    const newNodeMap = nodeArrToMap(newNodes);
-
-    setTree((prev) => ({
-      ...prev,
-      nodes: newNodeMap,
-    }));
+    setTree((prev) => {
+      return {
+        ...prev,
+        nodes: newNodes,
+      };
+    });
   };
 
   const resetTree = () => {
     setTree(createDefaultTreeView());
   };
 
-  // TODO
   const setSelected = (node: Node) => {
-    // If selected, select all children
-    // Parents should update to Full or Partial accordingly
-    // TODO:
-    // If deselected, deselect all children
-    // Parents should update to Empty or Partial accordingly
+    // If Selected, select all children
+    // Update parents to Partial or Selected accordingly
+    // If Unselected, deselect all children
+    // Update parents to Partial or Deselected accordingly
+
+    const updatedNodes = { ...tree.nodes };
+    const toggleTo: Selected =
+      node.selectedState === "Selected" ? "Unselected" : "Selected";
+
+    // Modify children
+    const modify = (key: string) => {
+      updatedNodes[key] = { ...updatedNodes[key], selectedState: toggleTo };
+      updatedNodes[key].children.forEach(modify);
+    };
+    modify(node.key);
+
+    // Modify parents
+    if (node.parent !== undefined) {
+      let curr: Node | null = tree.nodes[node.parent];
+
+      while (curr) {
+        const childStates = curr.children.map(
+          (key) => updatedNodes[key].selectedState,
+        );
+        const nextState: Selected = childStates.every((s) => s === "Selected")
+          ? "Selected"
+          : childStates.every((s) => s === "Unselected")
+            ? "Unselected"
+            : "Partial";
+
+        updatedNodes[curr.key] = {
+          ...curr,
+          selectedState: nextState,
+        };
+
+        curr = curr.parent ? tree.nodes[curr.parent] : null;
+      }
+    }
+
+    setTree((prev) => ({
+      ...prev,
+      nodes: updatedNodes,
+    }));
   };
 
   const editNodeData = (node: Node, data: string) => {
@@ -219,12 +260,13 @@ const TreeView = () => {
   };
 
   // TODO: toJson
-  const toJson = () => {
-    // TODO:
-  };
+  // const toJson = () => {};
+
+  // TODO: readJson
+  // const uploadJson = () => {};
   const RenderNode = ({ node }: RenderNodeProps) => {
     return (
-      <div style={{ paddingLeft: node.level }}>
+      <div style={{ paddingLeft: `${node.level * 1.5}rem` }}>
         <button onClick={() => addChild(node)}>Add</button>
         <button onClick={() => setRoot(node)}>SetRoot</button>
         <button onClick={() => deleteNode(node)}>Del</button>
@@ -258,12 +300,13 @@ const TreeView = () => {
   const MemoRender = memo(RenderNode);
 
   return (
-    <div>
+    <div style={{}}>
+      {/*<button onClick={() => uploadJson()}>Upload json</button>*/}
+      {/*<button onClick={() => toJson()}>Download json</button>*/}
       <button onClick={() => setCount((count) => count + 1)}>
         count is {count}
       </button>
-
-      <button onClick={resetTree}>Reset all nodes</button>
+      <button onClick={resetTree}>Reset to default</button>
       <button onClick={deleteSelected}>Delete Selected</button>
       <button onClick={() => foldRecursively(rootNode)}>
         Fold all recursively
