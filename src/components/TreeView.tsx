@@ -259,11 +259,6 @@ const TreeView = () => {
     setTree(newTreeState);
   };
 
-  // TODO: toJson
-  // const toJson = () => {};
-
-  // TODO: readJson
-  // const uploadJson = () => {};
   const RenderNode = ({ node }: RenderNodeProps) => {
     return (
       <div style={{ paddingLeft: `${node.level * 1.5}rem` }}>
@@ -301,8 +296,6 @@ const TreeView = () => {
 
   return (
     <div style={{}}>
-      {/*<button onClick={() => uploadJson()}>Upload json</button>*/}
-      {/*<button onClick={() => toJson()}>Download json</button>*/}
       <button onClick={() => setCount((count) => count + 1)}>
         count is {count}
       </button>
