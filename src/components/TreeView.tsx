@@ -1,4 +1,15 @@
 import { memo, useState } from "react";
+import {
+  ChevronDown,
+  ChevronRight,
+  ChevronsDown,
+  ChevronsRight,
+  CirclePlus,
+  Edit2,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import "./TreeView.css";
 
 export type Selected = "Unselected" | "Partial" | "Selected";
 
@@ -260,34 +271,115 @@ const TreeView = () => {
   };
 
   const RenderNode = ({ node }: RenderNodeProps) => {
-    return (
-      <div style={{ paddingLeft: `${node.level * 1.5}rem` }}>
-        <button onClick={() => addChild(node)}>Add</button>
-        <button onClick={() => setRoot(node)}>SetRoot</button>
-        <button onClick={() => deleteNode(node)}>Del</button>
-        <button onClick={() => editNodeData(node, crypto.randomUUID())}>
-          Edit
-        </button>
-        <button onClick={() => setSelected(node)}>{node.selectedState}</button>
-        <button onClick={() => foldRecursively(node)}>Fold all</button>
-        <button onClick={() => expandRecursively(node)}>Expand all</button>
-        <button
-          disabled={node.children.length === 0}
-          onClick={() => toggleNode(node)}
-        >
-          {node.children.length === 0
-            ? "No children"
-            : node.isOpen
-              ? "Collapse"
-              : "Expand"}
-        </button>
+    const nodeClasses = [
+      "tree-node",
+      node.selectedState === "Selected" ? "selected" : "",
+      node.selectedState === "Partial" ? "partial" : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
 
-        <textarea defaultValue={node.data} />
-        {node.isOpen &&
-          node.children.map((childId) => {
-            const childNode = tree.nodes[childId];
-            return <MemoRender node={childNode} key={childNode?.key} />;
-          })}
+    return (
+      <div className={nodeClasses}>
+        <div className="tree-node-content">
+          <div className="tree-node-actions">
+            <button
+              onClick={() => setRoot(node)}
+              title="Set as root"
+              aria-label="Set this node as root"
+              className="tree-action-btn"
+            >
+              <Upload size={16} />
+            </button>
+
+            <button
+              onClick={() => addChild(node)}
+              title="Add child"
+              aria-label="Add child node"
+              className="tree-action-btn"
+            >
+              <CirclePlus size={16} />
+            </button>
+
+            <button
+              onClick={() => deleteNode(node)}
+              title="Delete node"
+              aria-label="Delete this node"
+              className="tree-action-btn"
+            >
+              <Trash2 size={16} />
+            </button>
+
+            <button
+              onClick={() => editNodeData(node, crypto.randomUUID())}
+              title="Edit node data"
+              aria-label="Edit node data"
+              className="tree-action-btn"
+            >
+              <Edit2 size={16} />
+            </button>
+
+            <button
+              onClick={() => foldRecursively(node)}
+              title="Fold all"
+              aria-label="Fold all children recursively"
+              className="tree-action-btn"
+            >
+              <ChevronsRight size={16} />
+            </button>
+
+            <button
+              onClick={() => expandRecursively(node)}
+              title="Expand all"
+              aria-label="Expand all children recursively"
+              className="tree-action-btn"
+            >
+              <ChevronsDown size={16} />
+            </button>
+
+            <button
+              onClick={() => toggleNode(node)}
+              title={node.isOpen ? "Collapse node" : "Expand node"}
+              aria-label={node.isOpen ? "Collapse node" : "Expand node"}
+              className="tree-action-btn"
+              disabled={node.children.length === 0}
+            >
+              {!node.isOpen ? (
+                <ChevronRight size={16} />
+              ) : node.children.length === 0 ? (
+                <ChevronRight size={16} />
+              ) : (
+                <ChevronDown size={16} />
+              )}
+            </button>
+          </div>
+
+          <label className="tree-checkbox-label" title="Select node">
+            <input
+              type="checkbox"
+              checked={node.selectedState === "Selected"}
+              ref={(input) => {
+                if (input && node.selectedState === "Partial") {
+                  input.indeterminate = true;
+                }
+              }}
+              aria-label="Select this node"
+              onChange={() => setSelected(node)}
+              className="tree-checkbox"
+            />
+          </label>
+
+          <span className="tree-node-text">{node.data}</span>
+        </div>
+
+        {node.isOpen && node.children.length > 0 && (
+          <div className="tree-children">
+            {node.children.map((childId) => {
+              const childNode = tree.nodes[childId];
+              return <MemoRender node={childNode} key={childNode?.key} />;
+            })}
+          </div>
+        )}
       </div>
     );
   };
@@ -295,20 +387,37 @@ const TreeView = () => {
   const MemoRender = memo(RenderNode);
 
   return (
-    <div style={{}}>
-      <button onClick={() => setCount((count) => count + 1)}>
-        count is {count}
-      </button>
-      <button onClick={resetTree}>Reset to default</button>
-      <button onClick={deleteSelected}>Delete Selected</button>
-      <button onClick={() => foldRecursively(rootNode)}>
-        Fold all recursively
-      </button>
-      <button onClick={() => expandRecursively(rootNode)}>
-        Expand all recursively
-      </button>
-      <div>Hello</div>
-      <MemoRender node={rootNode} />
+    <div className="tree-view">
+      <div className="tree-controls">
+        <button
+          className="tree-control-btn"
+          onClick={() => setCount((count) => count + 1)}
+        >
+          Count: {count}
+        </button>
+        <button className="tree-control-btn" onClick={resetTree}>
+          Reset Tree
+        </button>
+        <button className="tree-control-btn" onClick={deleteSelected}>
+          Delete Selected
+        </button>
+        <button
+          className="tree-control-btn"
+          onClick={() => foldRecursively(rootNode)}
+        >
+          Fold All
+        </button>
+        <button
+          className="tree-control-btn"
+          onClick={() => expandRecursively(rootNode)}
+        >
+          Expand All
+        </button>
+      </div>
+
+      <div className="tree-container">
+        <MemoRender node={rootNode} />
+      </div>
     </div>
   );
 };

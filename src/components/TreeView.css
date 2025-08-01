@@ -1,0 +1,100 @@
+.tree-view {
+  font-family: monospace;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.tree-controls {
+  margin-bottom: 1rem;
+}
+
+.tree-control-btn {
+  margin-right: 0.5rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.tree-container {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 1rem;
+  min-height: 500px;
+}
+
+.tree-node {
+  margin: 0.25rem 0
+}
+
+.tree-node-content {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 24px;
+}
+
+.tree-node-actions {
+  display: flex;
+  gap: 0.125rem;
+  flex-shrink: 0;
+}
+
+.tree-action-btn {
+  background: none;
+  border: none;
+  padding: 0.25rem;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tree-action-btn:hover {
+  background-color: #606060;
+  color: #fff;
+  text-decoration: none;
+}
+
+.tree-checkbox-label {
+  width: 24px;
+  flex-shrink: 0;
+}
+
+.tree-checkbox {
+  width: 14px;
+  height: 14px;
+}
+
+.tree-node-text {
+  font-family: monospace;
+  font-size: 0.875rem;
+  padding: 0.125rem 0.25rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  min-width: 200px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-children {
+  margin-left: 1.5rem;
+  position: relative;
+}
+
+.tree-children::before {
+  content: '';
+  position: absolute;
+  left: -0.75rem;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: #606060;
+}
+
+.tree-node {
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+}
