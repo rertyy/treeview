@@ -17,7 +17,9 @@ type RenderNodeProps = {
   node: Node;
 };
 
-export type Node = {
+// TODO: when deleting nodes or adding nodes, checkboxes are not recalculated
+
+type Node = {
   key: string;
   data: string;
   children: string[];
@@ -92,15 +94,19 @@ const TreeView = () => {
 
   const addChild = (parent: Node) => {
     const uuid = crypto.randomUUID();
+    const childState =
+      parent.selectedState === "Selected" ? "Selected" : "Unselected";
+
     const newChild: Node = {
       key: uuid,
       data: uuid,
       children: [],
       level: parent.level + 1,
       isOpen: true,
-      selectedState: "Unselected",
+      selectedState: childState,
       parent: parent.key,
     };
+
     setTree((prev) => ({
       ...prev,
       nodes: {
@@ -114,7 +120,7 @@ const TreeView = () => {
     }));
   };
 
-  const toggleNode = (node: Node) => {
+  const toggleChildrenVisibility = (node: Node) => {
     setTree((prev) => ({
       ...prev,
       nodes: {
@@ -150,6 +156,8 @@ const TreeView = () => {
       delete newNodes[key];
     }
 
+    updateParentCheckboxes(parent.key, newNodes);
+
     setTree((prev) => {
       return {
         ...prev,
@@ -162,6 +170,37 @@ const TreeView = () => {
     setTree(createDefaultTreeView());
   };
 
+  const updateParentCheckboxes = (
+    node_key: string | undefined,
+    updatedNodes: NodeMap,
+  ) => {
+    // in-place update of checkbox state
+    if (!node_key) {
+      return;
+    }
+
+    let curr: Node | null = updatedNodes[node_key];
+
+    while (curr) {
+      const childStates = curr.children.map(
+        (key) => updatedNodes[key].selectedState,
+      );
+      const nextState: Selected = childStates.every((s) => s === "Selected")
+        ? "Selected"
+        : childStates.every((s) => s === "Unselected")
+          ? "Unselected"
+          : "Partial";
+
+      updatedNodes[curr.key] = {
+        ...curr,
+        selectedState: nextState,
+      };
+
+      curr = curr.parent ? updatedNodes[curr.parent] : null;
+    }
+
+    return updatedNodes;
+  };
   const setSelected = (node: Node) => {
     // If Selected, select all children
     // Update parents to Partial or Selected accordingly
@@ -179,28 +218,7 @@ const TreeView = () => {
     };
     modify(node.key);
 
-    // Modify parents
-    if (node.parent !== undefined) {
-      let curr: Node | null = tree.nodes[node.parent];
-
-      while (curr) {
-        const childStates = curr.children.map(
-          (key) => updatedNodes[key].selectedState,
-        );
-        const nextState: Selected = childStates.every((s) => s === "Selected")
-          ? "Selected"
-          : childStates.every((s) => s === "Unselected")
-            ? "Unselected"
-            : "Partial";
-
-        updatedNodes[curr.key] = {
-          ...curr,
-          selectedState: nextState,
-        };
-
-        curr = curr.parent ? tree.nodes[curr.parent] : null;
-      }
-    }
+    updateParentCheckboxes(node.parent, updatedNodes);
 
     setTree((prev) => ({
       ...prev,
@@ -224,6 +242,7 @@ const TreeView = () => {
     const rootNode = tree.nodes[tree.rootId];
     if (rootNode.selectedState === "Selected") {
       console.log("Cannot delete root");
+      alert("Cannot delete root node");
       return;
     }
 
@@ -242,7 +261,12 @@ const TreeView = () => {
       newNodes.push({ ...curr, children: childList });
     }
 
-    const newNodeMap = nodeArrToMap(newNodes);
+    const newNodesUpdated: Node[] = newNodes.map((node) => ({
+      ...node,
+      selectedState: "Unselected",
+    }));
+
+    const newNodeMap = nodeArrToMap(newNodesUpdated);
 
     setTree((prev) => ({
       ...prev,
@@ -271,16 +295,8 @@ const TreeView = () => {
   };
 
   const RenderNode = ({ node }: RenderNodeProps) => {
-    const nodeClasses = [
-      "tree-node",
-      node.selectedState === "Selected" ? "selected" : "",
-      node.selectedState === "Partial" ? "partial" : "",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
     return (
-      <div className={nodeClasses}>
+      <div className="tree-node">
         <div className="tree-node-content">
           <div className="tree-node-actions">
             <button
@@ -303,9 +319,14 @@ const TreeView = () => {
 
             <button
               onClick={() => deleteNode(node)}
-              title="Delete node"
+              title={
+                node.key === tree.rootId
+                  ? "Cannot delete root node"
+                  : "Delete node"
+              }
               aria-label="Delete this node"
               className="tree-action-btn"
+              disabled={tree.rootId === node.key}
             >
               <Trash2 size={16} />
             </button>
@@ -338,7 +359,7 @@ const TreeView = () => {
             </button>
 
             <button
-              onClick={() => toggleNode(node)}
+              onClick={() => toggleChildrenVisibility(node)}
               title={node.isOpen ? "Collapse node" : "Expand node"}
               aria-label={node.isOpen ? "Collapse node" : "Expand node"}
               className="tree-action-btn"
