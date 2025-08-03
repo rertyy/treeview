@@ -17,8 +17,6 @@ type RenderNodeProps = {
   node: Node;
 };
 
-// TODO: when deleting nodes or adding nodes, checkboxes are not recalculated
-
 type Node = {
   key: string;
   data: string;
@@ -69,7 +67,7 @@ const createDefaultTreeView = (): TreeState => {
 const TreeView = () => {
   const [tree, setTree] = useState<TreeState>(createDefaultTreeView());
   const rootNode = tree.nodes[tree.rootId];
-  const [count, setCount] = useState(0);
+  const [id, setId] = useState(2);
 
   const modifyRecursively = (parent: Node, updater: (n: Node) => Node) => {
     const updatedNodes = { ...tree.nodes };
@@ -92,14 +90,14 @@ const TreeView = () => {
     modifyRecursively(parent, setOpen);
   };
 
-  const addChild = (parent: Node) => {
+  const addChild = (parent: Node, data: string) => {
     const uuid = crypto.randomUUID();
     const childState =
       parent.selectedState === "Selected" ? "Selected" : "Unselected";
 
     const newChild: Node = {
       key: uuid,
-      data: uuid,
+      data: data,
       children: [],
       level: parent.level + 1,
       isOpen: true,
@@ -167,6 +165,7 @@ const TreeView = () => {
   };
 
   const resetTree = () => {
+    setId(2);
     setTree(createDefaultTreeView());
   };
 
@@ -185,11 +184,15 @@ const TreeView = () => {
       const childStates = curr.children.map(
         (key) => updatedNodes[key].selectedState,
       );
-      const nextState: Selected = childStates.every((s) => s === "Selected")
-        ? "Selected"
-        : childStates.every((s) => s === "Unselected")
+
+      const nextState: Selected =
+        childStates.length === 0
           ? "Unselected"
-          : "Partial";
+          : childStates.every((s) => s === "Selected")
+            ? "Selected"
+            : childStates.every((s) => s === "Unselected")
+              ? "Unselected"
+              : "Partial";
 
       updatedNodes[curr.key] = {
         ...curr,
@@ -309,7 +312,10 @@ const TreeView = () => {
             </button>
 
             <button
-              onClick={() => addChild(node)}
+              onClick={() => {
+                setId(id + 1);
+                addChild(node, id.toString(10));
+              }}
               title="Add child"
               aria-label="Add child node"
               className="tree-action-btn"
@@ -410,12 +416,9 @@ const TreeView = () => {
   return (
     <div className="tree-view">
       <div className="tree-controls">
-        <button
-          className="tree-control-btn"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count: {count}
-        </button>
+        <div className="tree-control-btn">
+          Number of nodes: {Object.keys(tree.nodes).length}
+        </div>
         <button className="tree-control-btn" onClick={resetTree}>
           Reset Tree
         </button>
