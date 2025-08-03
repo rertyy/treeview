@@ -54,7 +54,7 @@ const createDefaultTreeView = (): TreeState => {
     nodes: {
       [rootId]: {
         key: rootId,
-        data: "Root",
+        data: "1",
         children: [],
         level: 0,
         isOpen: true,
@@ -338,7 +338,10 @@ const TreeView = () => {
             </button>
 
             <button
-              onClick={() => editNodeData(node, crypto.randomUUID())}
+              onClick={() => {
+                setId(id + 1);
+                editNodeData(node, id.toString(10));
+              }}
               title="Edit node data"
               aria-label="Edit node data"
               className="tree-action-btn"
